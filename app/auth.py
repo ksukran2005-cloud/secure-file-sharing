@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, Response
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_login import login_user, logout_user, login_required, current_user
@@ -7,11 +7,12 @@ import os
 import uuid
 
 from .extensions import db
-from .models import User, File
+from .models import User, File, FileShare
 from .encryption import encrypt_file, decrypt_file
 
 
 auth = Blueprint("auth", __name__)
+
 
 ALLOWED_EXTENSIONS = {
     "txt",
@@ -21,6 +22,7 @@ ALLOWED_EXTENSIONS = {
     "jpeg",
     "docx"
 }
+
 
 @auth.route("/register", methods=["GET", "POST"])
 def register():
@@ -96,6 +98,7 @@ def dashboard():
         files=files
     )
 
+
 @auth.route("/files")
 @login_required
 def files():
@@ -108,6 +111,20 @@ def files():
         "files.html",
         files=user_files
     )
+
+@auth.route("/shared-with-me")
+@login_required
+def shared_with_me():
+    shared_files = FileShare.query.filter_by(
+        shared_with_user_id=current_user.id
+    ).all()
+
+    files = [
+        File.query.get(share.file_id)
+        for share in shared_files
+    ]
+
+    return render_template("shared_with_me.html", files=files)
 
 @auth.route("/upload", methods=["POST"])
 @login_required
@@ -130,34 +147,45 @@ def upload_file():
     if uploaded_file.filename == "":
         return "No file selected."
 
-    original_filename = secure_filename(uploaded_file.filename)
+    original_filename = secure_filename(
+        uploaded_file.filename
+    )
 
-    file_extension = original_filename.rsplit(".", 1)[-1].lower()
+    file_extension = original_filename.rsplit(
+        ".",
+        1
+    )[-1].lower()
 
     if file_extension not in ALLOWED_EXTENSIONS:
         return "File type not allowed."
 
-    unique_filename = str(uuid.uuid4()) + "_" + original_filename
+    unique_filename = (
+        str(uuid.uuid4())
+        + "_"
+        + original_filename
+    )
 
     upload_folder = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
         "uploads"
     )
 
-    os.makedirs(upload_folder, exist_ok=True)
+    os.makedirs(
+        upload_folder,
+        exist_ok=True
+    )
 
     file_path = os.path.join(
         upload_folder,
         unique_filename
     )
 
-    # Read the file
     file_data = uploaded_file.read()
 
-    # Encrypt the file before saving
-    encrypted_data = encrypt_file(file_data)
+    encrypted_data = encrypt_file(
+        file_data
+    )
 
-    # Save encrypted data
     with open(file_path, "wb") as file:
         file.write(encrypted_data)
 
@@ -172,14 +200,24 @@ def upload_file():
 
     return "File uploaded and encrypted successfully!"
 
+
 @auth.route("/download/<int:file_id>")
 @login_required
 def download_file(file_id):
 
-    file_record = File.query.get_or_404(file_id)
+    file_record = File.query.get_or_404(
+        file_id
+    )
 
     if file_record.owner_id != current_user.id:
-        return "You are not allowed to download this file.", 403
+
+        shared_file = FileShare.query.filter_by(
+            file_id=file_record.id,
+            shared_with_user_id=current_user.id
+        ).first()
+
+        if not shared_file:
+            return "You are not allowed to download this file.", 403
 
     upload_folder = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
@@ -197,9 +235,9 @@ def download_file(file_id):
     with open(file_path, "rb") as file:
         encrypted_data = file.read()
 
-    decrypted_data = decrypt_file(encrypted_data)
-
-    from flask import Response
+    decrypted_data = decrypt_file(
+        encrypted_data
+    )
 
     response = Response(
         decrypted_data,
@@ -212,11 +250,17 @@ def download_file(file_id):
 
     return response
 
-@auth.route("/delete/<int:file_id>", methods=["POST"])
+
+@auth.route(
+    "/delete/<int:file_id>",
+    methods=["POST"]
+)
 @login_required
 def delete_file(file_id):
 
-    file_record = File.query.get_or_404(file_id)
+    file_record = File.query.get_or_404(
+        file_id
+    )
 
     if file_record.owner_id != current_user.id:
         return "You are not allowed to delete this file.", 403
@@ -238,3 +282,49 @@ def delete_file(file_id):
     db.session.commit()
 
     return "File deleted successfully!"
+
+
+@auth.route(
+    "/share/<int:file_id>",
+    methods=["POST"]
+)
+@login_required
+def share_file(file_id):
+
+    file_record = File.query.get_or_404(
+        file_id
+    )
+
+    if file_record.owner_id != current_user.id:
+        return "You are not allowed to share this file.", 403
+
+    username = request.form["username"]
+
+    user_to_share = User.query.filter_by(
+        username=username
+    ).first()
+
+    if not user_to_share:
+        return "User not found."
+
+    if user_to_share.id == current_user.id:
+        return "You cannot share a file with yourself."
+
+    existing_share = FileShare.query.filter_by(
+        file_id=file_record.id,
+        shared_with_user_id=user_to_share.id
+    ).first()
+
+    if existing_share:
+        return "File is already shared with this user."
+
+    file_share = FileShare(
+        file_id=file_record.id,
+        shared_with_user_id=user_to_share.id,
+        permission="download"
+    )
+
+    db.session.add(file_share)
+    db.session.commit()
+
+    return "File shared successfully!"

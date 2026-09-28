@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Shared With Me - Secure File Sharing</title>
+</head>
+
+<body>
+
+    <h1>Shared With Me</h1>
+
+    <p>Files that other users have shared with you.</p>
+
+    <hr>
+
+    {% if files %}
+
+        {% for file in files %}
+
+            <div>
+
+                <strong>{{ file.original_filename }}</strong>
+
+                <br><br>
+
+                <a href="/download/{{ file.id }}">
+                    Download
+                </a>
+
+            </div>
+
+            <hr>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>No files have been shared with you yet.</p>
+
+    {% endif %}
+
+    <a href="/dashboard">
+        Back to Dashboard
+    </a>
+
+    <br><br>
+
+    <a href="/logout">
+        Logout
+    </a>
+
+</body>
+
+</html>

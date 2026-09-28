@@ -5,7 +5,10 @@ from .extensions import db
 
 class User(UserMixin, db.Model):
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
 
     username = db.Column(
         db.String(80),
@@ -51,4 +54,43 @@ class File(db.Model):
     uploaded_at = db.Column(
         db.DateTime,
         server_default=db.func.now()
+    )
+
+
+class FileShare(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    file_id = db.Column(
+        db.Integer,
+        db.ForeignKey("file.id"),
+        nullable=False
+    )
+
+    shared_with_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        nullable=False
+    )
+
+    permission = db.Column(
+        db.String(20),
+        nullable=False,
+        default="download"
+    )
+
+    shared_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now()
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "file_id",
+            "shared_with_user_id",
+            name="unique_file_share"
+        ),
     )
