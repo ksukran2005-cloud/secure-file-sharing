@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask
 
-from .extensions import db, login_manager
+from .extensions import db, login_manager, csrf
 
 
 load_dotenv()
@@ -20,6 +20,7 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
+    csrf.init_app(app)
     login_manager.login_view = "auth.login"
 
     # Import models

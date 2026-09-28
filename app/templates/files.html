@@ -35,6 +35,12 @@
                     method="POST"
                     style="display: inline;"
                 >
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="{{ csrf_token() }}"
+                    >
+
                     <button type="submit">
                         Delete
                     </button>
@@ -46,6 +52,12 @@
                     action="/share/{{ file.id }}"
                     method="POST"
                 >
+
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="{{ csrf_token() }}"
+                    >
 
                     <label>
                         Share with username:
