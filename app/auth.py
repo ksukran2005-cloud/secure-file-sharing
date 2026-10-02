@@ -251,6 +251,9 @@ def download_file(file_id):
         if not shared_file:
             return "You are not allowed to download this file.", 403
 
+        if shared_file.permission != "download":
+            return "You do not have download permission for this file.", 403
+
     upload_folder = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
         "uploads"
