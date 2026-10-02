@@ -308,6 +308,10 @@ def delete_file(file_id):
     if os.path.exists(file_path):
         os.remove(file_path)
 
+    FileShare.query.filter_by(
+        file_id=file_record.id
+    ).delete()
+
     db.session.delete(file_record)
     db.session.commit()
 
