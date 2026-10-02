@@ -34,6 +34,13 @@ ALLOWED_MIME_TYPES = {
 }
 
 
+def error_page(message, status_code=400):
+    return render_template(
+        "error.html",
+        message=message
+    ), status_code
+
+
 @auth.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -41,14 +48,23 @@ def register():
         email = request.form["email"]
         password = request.form["password"]
 
-        existing_username = User.query.filter_by(username=username).first()
-        existing_email = User.query.filter_by(email=email).first()
+        existing_username = User.query.filter_by(
+            username=username
+        ).first()
+
+        existing_email = User.query.filter_by(
+            email=email
+        ).first()
 
         if existing_username:
-            return "Username already exists."
+            return error_page(
+                "Username already exists."
+            )
 
         if existing_email:
-            return "Email already registered."
+            return error_page(
+                "Email already registered."
+            )
 
         password_hash = generate_password_hash(password)
 
@@ -72,13 +88,21 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
 
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter_by(
+            username=username
+        ).first()
 
-        if user and check_password_hash(user.password_hash, password):
+        if user and check_password_hash(
+            user.password_hash,
+            password
+        ):
             login_user(user)
             return "Login successful!"
 
-        return "Invalid username or password."
+        return error_page(
+            "Invalid username or password.",
+            401
+        )
 
     return render_template("login.html")
 
@@ -92,7 +116,9 @@ def logout():
 @auth.route("/dashboard")
 @login_required
 def dashboard():
-    files = File.query.filter_by(owner_id=current_user.id).all()
+    files = File.query.filter_by(
+        owner_id=current_user.id
+    ).all()
 
     return render_template(
         "dashboard.html",
@@ -125,6 +151,11 @@ def shared_with_me():
         for share in shared_files
     ]
 
+    files = [
+        file for file in files
+        if file is not None
+    ]
+
     return render_template(
         "shared_with_me.html",
         files=files
@@ -136,7 +167,9 @@ def shared_with_me():
 def upload_file():
 
     if "file" not in request.files:
-        return "No file selected."
+        return error_page(
+            "No file was selected."
+        )
 
     uploaded_file = request.files["file"]
 
@@ -147,36 +180,51 @@ def upload_file():
     uploaded_file.stream.seek(0)
 
     if file_size > MAX_FILE_SIZE:
-        return "File is too large. Maximum size is 10 MB."
+        return error_page(
+            "File is too large. Maximum size is 10 MB."
+        )
 
     if uploaded_file.filename == "":
-        return "No file selected."
+        return error_page(
+            "No file was selected."
+        )
 
     original_filename = secure_filename(
         uploaded_file.filename
     )
 
     if "." not in original_filename:
-        return "File type not allowed."
+        return error_page(
+            "File type is not allowed."
+        )
 
     file_extension = original_filename.rsplit(
-        ".", 1
+        ".",
+        1
     )[-1].lower()
 
     if file_extension not in ALLOWED_EXTENSIONS:
-        return "File type not allowed."
+        return error_page(
+            "File type is not allowed."
+        )
 
     file_data = uploaded_file.read()
 
     detected_type = filetype.guess(file_data)
 
     if file_extension == "txt":
+
         if detected_type is not None:
-            return "File content does not match the selected file type."
+            return error_page(
+                "File content does not match the selected file type."
+            )
 
     else:
+
         if detected_type is None:
-            return "File content does not match the selected file type."
+            return error_page(
+                "File content does not match the selected file type."
+            )
 
         detected_mime = detected_type.mime
 
@@ -187,22 +235,36 @@ def upload_file():
         if file_extension == "docx":
 
             try:
-                with zipfile.ZipFile(io.BytesIO(file_data)) as docx_file:
+                with zipfile.ZipFile(
+                    io.BytesIO(file_data)
+                ) as docx_file:
+
                     if "[Content_Types].xml" not in docx_file.namelist():
-                        return "File content does not match the selected file type."
+                        return error_page(
+                            "File content does not match the selected file type."
+                        )
 
             except zipfile.BadZipFile:
-                return "File content does not match the selected file type."
+                return error_page(
+                    "File content does not match the selected file type."
+                )
 
         elif detected_mime != expected_mime:
-            return "File content does not match the selected file type."
+
+            return error_page(
+                "File content does not match the selected file type."
+            )
 
     unique_filename = (
-        str(uuid.uuid4()) + "_" + original_filename
+        str(uuid.uuid4())
+        + "_"
+        + original_filename
     )
 
     upload_folder = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
+        os.path.dirname(
+            os.path.dirname(__file__)
+        ),
         "uploads"
     )
 
@@ -220,8 +282,14 @@ def upload_file():
         file_data
     )
 
-    with open(file_path, "wb") as file:
-        file.write(encrypted_data)
+    with open(
+        file_path,
+        "wb"
+    ) as file:
+
+        file.write(
+            encrypted_data
+        )
 
     new_file = File(
         original_filename=original_filename,
@@ -229,7 +297,10 @@ def upload_file():
         owner_id=current_user.id
     )
 
-    db.session.add(new_file)
+    db.session.add(
+        new_file
+    )
+
     db.session.commit()
 
     return "File uploaded and encrypted successfully!"
@@ -239,7 +310,9 @@ def upload_file():
 @login_required
 def download_file(file_id):
 
-    file_record = File.query.get_or_404(file_id)
+    file_record = File.query.get_or_404(
+        file_id
+    )
 
     if file_record.owner_id != current_user.id:
 
@@ -249,13 +322,21 @@ def download_file(file_id):
         ).first()
 
         if not shared_file:
-            return "You are not allowed to download this file.", 403
+            return error_page(
+                "You are not allowed to download this file.",
+                403
+            )
 
         if shared_file.permission != "download":
-            return "You do not have download permission for this file.", 403
+            return error_page(
+                "You do not have download permission for this file.",
+                403
+            )
 
     upload_folder = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
+        os.path.dirname(
+            os.path.dirname(__file__)
+        ),
         "uploads"
     )
 
@@ -265,9 +346,16 @@ def download_file(file_id):
     )
 
     if not os.path.exists(file_path):
-        return "File not found.", 404
+        return error_page(
+            "File not found.",
+            404
+        )
 
-    with open(file_path, "rb") as file:
+    with open(
+        file_path,
+        "rb"
+    ) as file:
+
         encrypted_data = file.read()
 
     decrypted_data = decrypt_file(
@@ -286,17 +374,27 @@ def download_file(file_id):
     return response
 
 
-@auth.route("/delete/<int:file_id>", methods=["POST"])
+@auth.route(
+    "/delete/<int:file_id>",
+    methods=["POST"]
+)
 @login_required
 def delete_file(file_id):
 
-    file_record = File.query.get_or_404(file_id)
+    file_record = File.query.get_or_404(
+        file_id
+    )
 
     if file_record.owner_id != current_user.id:
-        return "You are not allowed to delete this file.", 403
+        return error_page(
+            "You are not allowed to delete this file.",
+            403
+        )
 
     upload_folder = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
+        os.path.dirname(
+            os.path.dirname(__file__)
+        ),
         "uploads"
     )
 
@@ -312,20 +410,31 @@ def delete_file(file_id):
         file_id=file_record.id
     ).delete()
 
-    db.session.delete(file_record)
+    db.session.delete(
+        file_record
+    )
+
     db.session.commit()
 
     return "File deleted successfully!"
 
 
-@auth.route("/share/<int:file_id>", methods=["POST"])
+@auth.route(
+    "/share/<int:file_id>",
+    methods=["POST"]
+)
 @login_required
 def share_file(file_id):
 
-    file_record = File.query.get_or_404(file_id)
+    file_record = File.query.get_or_404(
+        file_id
+    )
 
     if file_record.owner_id != current_user.id:
-        return "You are not allowed to share this file.", 403
+        return error_page(
+            "You are not allowed to share this file.",
+            403
+        )
 
     username = request.form["username"]
 
@@ -334,10 +443,14 @@ def share_file(file_id):
     ).first()
 
     if not user_to_share:
-        return "User not found."
+        return error_page(
+            "User not found."
+        )
 
     if user_to_share.id == current_user.id:
-        return "You cannot share a file with yourself."
+        return error_page(
+            "You cannot share a file with yourself."
+        )
 
     existing_share = FileShare.query.filter_by(
         file_id=file_record.id,
@@ -345,7 +458,9 @@ def share_file(file_id):
     ).first()
 
     if existing_share:
-        return "File is already shared with this user."
+        return error_page(
+            "File is already shared with this user."
+        )
 
     file_share = FileShare(
         file_id=file_record.id,
@@ -353,7 +468,10 @@ def share_file(file_id):
         permission="download"
     )
 
-    db.session.add(file_share)
+    db.session.add(
+        file_share
+    )
+
     db.session.commit()
 
     return "File shared successfully!"
