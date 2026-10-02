@@ -5,14 +5,15 @@ from flask_login import login_user, logout_user, login_required, current_user
 
 import os
 import uuid
+import filetype
+import zipfile
+import io
 
 from .extensions import db
 from .models import User, File, FileShare
 from .encryption import encrypt_file, decrypt_file
 
-
 auth = Blueprint("auth", __name__)
-
 
 ALLOWED_EXTENSIONS = {
     "txt",
@@ -23,12 +24,19 @@ ALLOWED_EXTENSIONS = {
     "docx"
 }
 
+ALLOWED_MIME_TYPES = {
+    "txt": "text/plain",
+    "pdf": "application/pdf",
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "docx": "application/zip"
+}
+
 
 @auth.route("/register", methods=["GET", "POST"])
 def register():
-
     if request.method == "POST":
-
         username = request.form["username"]
         email = request.form["email"]
         password = request.form["password"]
@@ -60,9 +68,7 @@ def register():
 
 @auth.route("/login", methods=["GET", "POST"])
 def login():
-
     if request.method == "POST":
-
         username = request.form["username"]
         password = request.form["password"]
 
@@ -79,19 +85,14 @@ def login():
 
 @auth.route("/logout")
 def logout():
-
     logout_user()
-
     return "Logged out successfully!"
 
 
 @auth.route("/dashboard")
 @login_required
 def dashboard():
-
-    files = File.query.filter_by(
-        owner_id=current_user.id
-    ).all()
+    files = File.query.filter_by(owner_id=current_user.id).all()
 
     return render_template(
         "dashboard.html",
@@ -102,7 +103,6 @@ def dashboard():
 @auth.route("/files")
 @login_required
 def files():
-
     user_files = File.query.filter_by(
         owner_id=current_user.id
     ).all()
@@ -111,6 +111,7 @@ def files():
         "files.html",
         files=user_files
     )
+
 
 @auth.route("/shared-with-me")
 @login_required
@@ -124,7 +125,11 @@ def shared_with_me():
         for share in shared_files
     ]
 
-    return render_template("shared_with_me.html", files=files)
+    return render_template(
+        "shared_with_me.html",
+        files=files
+    )
+
 
 @auth.route("/upload", methods=["POST"])
 @login_required
@@ -151,18 +156,49 @@ def upload_file():
         uploaded_file.filename
     )
 
+    if "." not in original_filename:
+        return "File type not allowed."
+
     file_extension = original_filename.rsplit(
-        ".",
-        1
+        ".", 1
     )[-1].lower()
 
     if file_extension not in ALLOWED_EXTENSIONS:
         return "File type not allowed."
 
+    file_data = uploaded_file.read()
+
+    detected_type = filetype.guess(file_data)
+
+    if file_extension == "txt":
+        if detected_type is not None:
+            return "File content does not match the selected file type."
+
+    else:
+        if detected_type is None:
+            return "File content does not match the selected file type."
+
+        detected_mime = detected_type.mime
+
+        expected_mime = ALLOWED_MIME_TYPES.get(
+            file_extension
+        )
+
+        if file_extension == "docx":
+
+            try:
+                with zipfile.ZipFile(io.BytesIO(file_data)) as docx_file:
+                    if "[Content_Types].xml" not in docx_file.namelist():
+                        return "File content does not match the selected file type."
+
+            except zipfile.BadZipFile:
+                return "File content does not match the selected file type."
+
+        elif detected_mime != expected_mime:
+            return "File content does not match the selected file type."
+
     unique_filename = (
-        str(uuid.uuid4())
-        + "_"
-        + original_filename
+        str(uuid.uuid4()) + "_" + original_filename
     )
 
     upload_folder = os.path.join(
@@ -179,8 +215,6 @@ def upload_file():
         upload_folder,
         unique_filename
     )
-
-    file_data = uploaded_file.read()
 
     encrypted_data = encrypt_file(
         file_data
@@ -205,9 +239,7 @@ def upload_file():
 @login_required
 def download_file(file_id):
 
-    file_record = File.query.get_or_404(
-        file_id
-    )
+    file_record = File.query.get_or_404(file_id)
 
     if file_record.owner_id != current_user.id:
 
@@ -251,16 +283,11 @@ def download_file(file_id):
     return response
 
 
-@auth.route(
-    "/delete/<int:file_id>",
-    methods=["POST"]
-)
+@auth.route("/delete/<int:file_id>", methods=["POST"])
 @login_required
 def delete_file(file_id):
 
-    file_record = File.query.get_or_404(
-        file_id
-    )
+    file_record = File.query.get_or_404(file_id)
 
     if file_record.owner_id != current_user.id:
         return "You are not allowed to delete this file.", 403
@@ -284,16 +311,11 @@ def delete_file(file_id):
     return "File deleted successfully!"
 
 
-@auth.route(
-    "/share/<int:file_id>",
-    methods=["POST"]
-)
+@auth.route("/share/<int:file_id>", methods=["POST"])
 @login_required
 def share_file(file_id):
 
-    file_record = File.query.get_or_404(
-        file_id
-    )
+    file_record = File.query.get_or_404(file_id)
 
     if file_record.owner_id != current_user.id:
         return "You are not allowed to share this file.", 403
