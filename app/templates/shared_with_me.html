@@ -6,51 +6,236 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Shared With Me - Secure File Sharing</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: #111827;
+            border-bottom: 1px solid #334155;
+            padding: 18px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: #38bdf8;
+        }
+
+        .logout {
+            color: #cbd5e1;
+            text-decoration: none;
+        }
+
+        .logout:hover {
+            color: #38bdf8;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #94a3b8;
+        }
+
+        .file-list {
+            display: grid;
+            gap: 18px;
+        }
+
+        .file-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .file-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #f8fafc;
+            word-break: break-word;
+        }
+
+        .file-info {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-top: 6px;
+        }
+
+        .download-button {
+            display: inline-block;
+            text-decoration: none;
+            background: #0284c7;
+            color: white;
+            padding: 9px 15px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        .download-button:hover {
+            background: #0369a1;
+        }
+
+        .empty {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 25px;
+            color: #94a3b8;
+        }
+
+        .navigation {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .navigation a {
+            color: #38bdf8;
+            text-decoration: none;
+        }
+
+        .navigation a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 700px) {
+
+            .navbar {
+                padding: 15px 20px;
+            }
+
+            .container {
+                margin-top: 25px;
+            }
+
+            .file-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-    <h1>Shared With Me</h1>
+    <nav class="navbar">
 
-    <p>Files that other users have shared with you.</p>
+        <div class="logo">
+            🔐 Secure File Sharing
+        </div>
 
-    <hr>
+        <a class="logout" href="/logout">
+            Logout
+        </a>
 
-    {% if files %}
+    </nav>
 
-        {% for file in files %}
 
-            <div>
+    <main class="container">
 
-                <strong>{{ file.original_filename }}</strong>
+        <section class="header">
 
-                <br><br>
+            <h1>
+                Shared With Me
+            </h1>
 
-                <a href="/download/{{ file.id }}">
-                    Download
-                </a>
+            <p>
+                Files that other users have shared with you.
+            </p>
+
+        </section>
+
+
+        {% if files %}
+
+            <section class="file-list">
+
+                {% for file in files %}
+
+                    <div class="file-card">
+
+                        <div>
+
+                            <div class="file-name">
+                                📄 {{ file.original_filename }}
+                            </div>
+
+                            <div class="file-info">
+                                Shared file
+                            </div>
+
+                        </div>
+
+
+                        <a
+                            class="download-button"
+                            href="/download/{{ file.id }}"
+                        >
+                            Download
+                        </a>
+
+                    </div>
+
+                {% endfor %}
+
+            </section>
+
+        {% else %}
+
+            <div class="empty">
+
+                No files have been shared with you yet.
 
             </div>
 
-            <hr>
+        {% endif %}
 
-        {% endfor %}
 
-    {% else %}
+        <nav class="navigation">
 
-        <p>No files have been shared with you yet.</p>
+            <a href="/dashboard">
+                ← Back to Dashboard
+            </a>
 
-    {% endif %}
+            <a href="/files">
+                My Files →
+            </a>
 
-    <a href="/dashboard">
-        Back to Dashboard
-    </a>
+        </nav>
 
-    <br><br>
-
-    <a href="/logout">
-        Logout
-    </a>
+    </main>
 
 </body>
 

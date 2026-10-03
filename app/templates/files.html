@@ -6,97 +6,335 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>My Files - Secure File Sharing</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: #111827;
+            border-bottom: 1px solid #334155;
+            padding: 18px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: #38bdf8;
+        }
+
+        .logout {
+            color: #cbd5e1;
+            text-decoration: none;
+        }
+
+        .logout:hover {
+            color: #38bdf8;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #94a3b8;
+        }
+
+        .file-list {
+            display: grid;
+            gap: 18px;
+        }
+
+        .file-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 22px;
+        }
+
+        .file-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #f8fafc;
+            margin-bottom: 18px;
+            word-break: break-word;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .button {
+            display: inline-block;
+            text-decoration: none;
+            background: #0284c7;
+            color: white;
+            padding: 9px 15px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .button:hover {
+            background: #0369a1;
+        }
+
+        .delete-button {
+            background: #dc2626;
+        }
+
+        .delete-button:hover {
+            background: #b91c1c;
+        }
+
+        .share-section {
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid #334155;
+        }
+
+        .share-section label {
+            display: block;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .share-form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .share-form input {
+            background: #0f172a;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 9px 12px;
+            width: 260px;
+        }
+
+        .share-form input:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+
+        .empty {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 25px;
+            color: #94a3b8;
+        }
+
+        .navigation {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .navigation a {
+            color: #38bdf8;
+            text-decoration: none;
+        }
+
+        .navigation a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 700px) {
+
+            .navbar {
+                padding: 15px 20px;
+            }
+
+            .container {
+                margin-top: 25px;
+            }
+
+            .share-form {
+                flex-direction: column;
+            }
+
+            .share-form input {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-    <h1>My Files</h1>
+    <nav class="navbar">
 
-    <p>These are your uploaded files.</p>
+        <div class="logo">
+            🔐 Secure File Sharing
+        </div>
 
-    <hr>
+        <a class="logout" href="/logout">
+            Logout
+        </a>
 
-    {% if files %}
+    </nav>
 
-        {% for file in files %}
 
-            <div>
+    <main class="container">
 
-                <strong>{{ file.original_filename }}</strong>
+        <section class="header">
 
-                <br><br>
+            <h1>
+                My Files
+            </h1>
 
-                <a href="/download/{{ file.id }}">
-                    Download
-                </a>
+            <p>
+                Manage, download, delete and share your uploaded files.
+            </p>
 
-                <form
-                    action="/delete/{{ file.id }}"
-                    method="POST"
-                    style="display: inline;"
-                >
-                    <input
-                        type="hidden"
-                        name="csrf_token"
-                        value="{{ csrf_token() }}"
-                    >
+        </section>
 
-                    <button type="submit">
-                        Delete
-                    </button>
-                </form>
 
-                <br><br>
+        {% if files %}
 
-                <form
-                    action="/share/{{ file.id }}"
-                    method="POST"
-                >
+            <section class="file-list">
 
-                    <input
-                        type="hidden"
-                        name="csrf_token"
-                        value="{{ csrf_token() }}"
-                    >
+                {% for file in files %}
 
-                    <label>
-                        Share with username:
-                    </label>
+                    <div class="file-card">
 
-                    <input
-                        type="text"
-                        name="username"
-                        placeholder="Enter username"
-                        required
-                    >
+                        <div class="file-name">
+                            📄 {{ file.original_filename }}
+                        </div>
 
-                    <button type="submit">
-                        Share File
-                    </button>
 
-                </form>
+                        <div class="actions">
+
+                            <a
+                                class="button"
+                                href="/download/{{ file.id }}"
+                            >
+                                Download
+                            </a>
+
+
+                            <form
+                                action="/delete/{{ file.id }}"
+                                method="POST"
+                            >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
+
+                                <button
+                                    class="button delete-button"
+                                    type="submit"
+                                >
+                                    Delete
+                                </button>
+
+                            </form>
+
+                        </div>
+
+
+                        <div class="share-section">
+
+                            <label>
+                                Share this file with another user
+                            </label>
+
+
+                            <form
+                                class="share-form"
+                                action="/share/{{ file.id }}"
+                                method="POST"
+                            >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
+
+                                <input
+                                    type="text"
+                                    name="username"
+                                    placeholder="Enter username"
+                                    required
+                                >
+
+                                <button
+                                    class="button"
+                                    type="submit"
+                                >
+                                    Share File
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </section>
+
+        {% else %}
+
+            <div class="empty">
+
+                You have not uploaded any files yet.
 
             </div>
 
-            <hr>
+        {% endif %}
 
-        {% endfor %}
 
-    {% else %}
+        <nav class="navigation">
 
-        <p>You have not uploaded any files yet.</p>
+            <a href="/dashboard">
+                ← Back to Dashboard
+            </a>
 
-    {% endif %}
+            <a href="/shared-with-me">
+                Shared With Me →
+            </a>
 
-    <a href="/dashboard">
-        Back to Dashboard
-    </a>
+        </nav>
 
-    <br><br>
-
-    <a href="/logout">
-        Logout
-    </a>
+    </main>
 
 </body>
 
