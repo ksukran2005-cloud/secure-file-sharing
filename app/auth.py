@@ -48,6 +48,11 @@ def register():
         email = request.form["email"]
         password = request.form["password"]
 
+        if len(password) < 8:
+            return error_page(
+                "Password must be at least 8 characters long."
+            )
+
         existing_username = User.query.filter_by(
             username=username
         ).first()
