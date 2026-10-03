@@ -37,8 +37,12 @@
         }
 
         .logout {
+            background: none;
+            border: none;
             color: #cbd5e1;
-            text-decoration: none;
+            padding: 0;
+            font-size: 16px;
+            cursor: pointer;
         }
 
         .logout:hover {
@@ -200,9 +204,19 @@
             🔐 Secure File Sharing
         </div>
 
-        <a class="logout" href="/logout">
-            Logout
-        </a>
+        <form action="/logout" method="POST">
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+            <button
+                class="logout"
+                type="submit"
+            >
+                Logout
+            </button>
+        </form>
 
     </nav>
 
