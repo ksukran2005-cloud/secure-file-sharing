@@ -1,7 +1,25 @@
-from flask import Blueprint, render_template, request, Response, redirect
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    Response,
+    redirect,
+    flash
+)
+
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
+
 from werkzeug.utils import secure_filename
-from flask_login import login_user, logout_user, login_required, current_user
+
+from flask_login import (
+    login_user,
+    logout_user,
+    login_required,
+    current_user
+)
 
 import os
 import uuid
@@ -13,7 +31,9 @@ from .extensions import db
 from .models import User, File, FileShare
 from .encryption import encrypt_file, decrypt_file
 
+
 auth = Blueprint("auth", __name__)
+
 
 ALLOWED_EXTENSIONS = {
     "txt",
@@ -23,6 +43,7 @@ ALLOWED_EXTENSIONS = {
     "jpeg",
     "docx"
 }
+
 
 ALLOWED_MIME_TYPES = {
     "txt": "text/plain",
@@ -43,7 +64,9 @@ def error_page(message, status_code=400):
 
 @auth.route("/register", methods=["GET", "POST"])
 def register():
+
     if request.method == "POST":
+
         username = request.form["username"]
         email = request.form["email"]
         password = request.form["password"]
@@ -89,7 +112,9 @@ def register():
 
 @auth.route("/login", methods=["GET", "POST"])
 def login():
+
     if request.method == "POST":
+
         username = request.form["username"]
         password = request.form["password"]
 
@@ -115,13 +140,16 @@ def login():
 @auth.route("/logout", methods=["POST"])
 @login_required
 def logout():
+
     logout_user()
+
     return "Logged out successfully!"
 
 
 @auth.route("/dashboard")
 @login_required
 def dashboard():
+
     files = File.query.filter_by(
         owner_id=current_user.id
     ).all()
@@ -135,6 +163,7 @@ def dashboard():
 @auth.route("/files")
 @login_required
 def files():
+
     user_files = File.query.filter_by(
         owner_id=current_user.id
     ).all()
@@ -148,6 +177,7 @@ def files():
 @auth.route("/shared-with-me")
 @login_required
 def shared_with_me():
+
     shared_files = FileShare.query.filter_by(
         shared_with_user_id=current_user.id
     ).all()
@@ -309,7 +339,12 @@ def upload_file():
 
     db.session.commit()
 
-    return "File uploaded and encrypted successfully!"
+    flash(
+        "File uploaded and encrypted successfully!",
+        "success"
+    )
+
+    return redirect("/files")
 
 
 @auth.route("/download/<int:file_id>")

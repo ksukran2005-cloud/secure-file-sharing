@@ -68,6 +68,15 @@
             color: #94a3b8;
         }
 
+        .success-message {
+            background: #14532d;
+            border: 1px solid #22c55e;
+            color: #bbf7d0;
+            padding: 14px 18px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
         .file-list {
             display: grid;
             gap: 18px;
@@ -234,6 +243,23 @@
             </p>
 
         </section>
+
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+
+            {% if messages %}
+
+                {% for category, message in messages %}
+
+                    <div class="success-message">
+                        {{ message }}
+                    </div>
+
+                {% endfor %}
+
+            {% endif %}
+
+        {% endwith %}
 
 
         {% if files %}
