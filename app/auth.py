@@ -457,7 +457,12 @@ def delete_file(file_id):
 
     db.session.commit()
 
-    return "File deleted successfully!"
+    flash(
+        "File deleted successfully!",
+        "success"
+    )
+
+    return redirect("/files")
 
 
 @auth.route(
