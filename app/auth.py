@@ -515,9 +515,14 @@ def share_file(file_id):
     )
 
     db.session.add(
-        file_share
+    file_share
     )
 
     db.session.commit()
 
-    return "File shared successfully!"
+    flash(
+        "File shared successfully!",
+        "success"
+    )
+
+    return redirect("/files")
