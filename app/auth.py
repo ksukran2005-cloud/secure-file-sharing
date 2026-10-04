@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, Response
+from flask import Blueprint, render_template, request, Response, redirect
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_login import login_user, logout_user, login_required, current_user
@@ -102,7 +102,7 @@ def login():
             password
         ):
             login_user(user)
-            return "Login successful!"
+            return redirect("/dashboard")
 
         return error_page(
             "Invalid username or password.",
